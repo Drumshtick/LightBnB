@@ -88,11 +88,12 @@ exports.addUser = addUser;
 const getAllReservations = function(guest_id, limit = 10) {
   return pool
   .query(`
-  SELECT reservations.*, properties.*, property_reviews.*
+  SELECT reservations.*, properties.*, avg(property_reviews.rating) as average_rating
   FROM reservations
   JOIN properties ON reservations.property_id = properties.id
   JOIN property_reviews ON properties.id = property_reviews.property_id
   WHERE reservations.guest_id = $1
+  GROUP BY reservations.id, properties.id
   LIMIT $2;
   `, [guest_id, limit])
   .then((result) => {
@@ -113,14 +114,83 @@ exports.getAllReservations = getAllReservations;
  * @param {{}} options An object containing query options.
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
+ * {
+  city,
+  owner_id,
+  minimum_price_per_night,
+  maximum_price_per_night,
+  minimum_rating;
+  `
+  WHERE city LIKE '%ancouv%'
+  GROUP BY properties.id
+  HAVING avg(property_reviews.rating) >= 4
+  ORDER BY cost_per_night
+  LIMIT 10;
+  `
+}
  */
 const getAllProperties = function(options, limit = 10) {
-  return pool
-  .query(`
-  SELECT *
+  let queryString = `
+  SELECT properties.*, avg(property_reviews.rating) as average_rating
   FROM properties
-  LIMIT $1;
-  `, [limit])
+  JOIN property_reviews ON properties.id = property_id
+  `;
+  queryStringValues = [];
+  // Check if city is added as filter
+  if (options.city) {
+    queryStringValues.push(options.city);
+    queryString += `WHERE city LIKE $${queryStringValues.length} `;
+  }
+  // Check if owner_id is added as filter
+  if (options.owner_id) {
+    // If first filter added
+    if (queryStringValues.length == 0) {
+      queryStringValues.push(options.owner_id);
+      queryString += `WHERE owner_id = $${queryStringValues.length} `;
+    }
+    queryStringValues.push(options.owner_id);
+    queryString += `AND owner_id = $${queryStringValues.length} `;
+  }
+  // Check if min price per night is added as filter
+  if (options.minimum_price_per_night) {
+    // If first filter added
+    if (queryStringValues.length == 0) {
+      queryStringValues.push(options.minimum_price_per_night * 100);
+      queryString += `WHERE cost_per_night > $${queryStringValues.length} `;
+    }
+    queryStringValues.push(options.minimum_price_per_night * 100);
+    queryString += `AND cost_per_night > $${queryStringValues.length} `;
+  }
+  // Check if max price per night is added as filter
+  if (options.maximum_price_per_night) {
+    // If first filter added
+    if (queryStringValues.length == 0) {
+      queryStringValues.push(options.maximum_price_per_night * 100);
+      queryString += `WHERE cost_per_night < $${queryStringValues.length} `;
+    }
+    queryStringValues.push(options.maximum_price_per_night * 100);
+    queryString += `AND cost_per_night < $${queryStringValues.length} `;
+  }
+  // Check if rating is added as filter
+  if (options.minimum_rating) {
+    // If first filter added
+    if (queryStringValues.length == 0) {
+      queryStringValues.push(options.minimum_rating);
+      queryString += `WHERE rating > $${queryStringValues.length} `;
+    }
+    queryStringValues.push(options.minimum_rating);
+    queryString += `AND rating > $${queryStringValues.length} `;
+  }
+  // Add values guaranteed to terminate query
+  queryStringValues.push(limit);
+  queryString += `
+  GROUP BY properties.id
+  ORDER BY cost_per_night
+  LIMIT $${queryStringValues.length};
+  `;
+  console.log(queryString, queryStringValues);
+  return pool
+  .query(queryString, queryStringValues)
   .then((result) => result.rows)
   .catch((err) => console.log(err.message));
 };
