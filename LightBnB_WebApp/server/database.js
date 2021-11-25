@@ -201,11 +201,59 @@ exports.getAllProperties = getAllProperties;
  * Add a property to the database
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
+ * {
+  owner_id: int,
+  title: string,
+  description: string,
+  thumbnail_photo_url: string,
+  cover_photo_url: string,
+  cost_per_night: string,
+  street: string,
+  city: string,
+  province: string,
+  post_code: string,
+  country: string,
+  parking_spaces: int,
+  number_of_bathrooms: int,
+  number_of_bedrooms: int
+}
+RETURNING *; returns newly created entry
  */
 const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  // Prep query string and values to be added
+  // Include owner_id immediately 
+  queryString = `
+  INSERT INTO properties
+  (owner_id, title, description, number_of_bedrooms,
+    number_of_bathrooms, parking_spaces, cost_per_night,
+    thumbnail_photo_url, cover_photo_url, street, country,
+    city, province, post_code)
+  VALUES ( $1
+  `;
+  queryStringValues = [property.owner_id];
+  // Loop through property object and push to query string
+  // and values array
+  for (const item in property) {
+    if (item === 'owner_id') {
+      continue;
+    } else {
+      queryStringValues.push(property[item]);
+      queryString += `, $${queryStringValues.length}`;
+    }
+  }
+  // Add line to terminate query and return the new entry
+  queryString += `) RETURNING *;`;
+  return pool
+  .query(queryString, queryStringValues)
+  .then((results) => {
+    return results.rows;
+  })
+  .catch((err) => {
+    console.log(err.message);
+  });
+  // const propertyId = Object.keys(properties).length + 1;
+  // property.id = propertyId;
+  // properties[propertyId] = property;
+  // return Promise.resolve(property);
 }
 exports.addProperty = addProperty;
