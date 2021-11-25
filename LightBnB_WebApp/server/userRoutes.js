@@ -1,7 +1,6 @@
 const bcrypt = require('bcrypt');
 
 module.exports = function(router, database) {
-
   // Create a new user
   router.post('/', (req, res) => {
     const user = req.body;
@@ -26,6 +25,7 @@ module.exports = function(router, database) {
   const login =  function(email, password) {
     return database.getUserWithEmail(email)
     .then(user => {
+      console.log("password:", password);
       if (bcrypt.compareSync(password, user.password)) {
         return user;
       }
