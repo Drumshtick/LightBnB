@@ -93,7 +93,6 @@ const getAllReservations = function(guest_id, limit = 10) {
   LIMIT $2;
   `, [guest_id, limit])
   .then((result) => {
-    console.log(result.rows);
     return result.rows;
   })
   .catch((err) => {
