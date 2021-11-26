@@ -71,10 +71,6 @@ const addUser =  function(user) {
   .catch((err) => {
     console.log(err.message);
   });
-  // const userId = Object.keys(users).length + 1;
-  // user.id = userId;
-  // users[userId] = user;
-  // return Promise.resolve(user);
 }
 exports.addUser = addUser;
 
@@ -103,7 +99,6 @@ const getAllReservations = function(guest_id, limit = 10) {
   .catch((err) => {
     console.log(err.message);
   });
-  // return getAllProperties(null, 2);
 }
 exports.getAllReservations = getAllReservations;
 
@@ -114,20 +109,6 @@ exports.getAllReservations = getAllReservations;
  * @param {{}} options An object containing query options.
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
- * {
-  city,
-  owner_id,
-  minimum_price_per_night,
-  maximum_price_per_night,
-  minimum_rating;
-  `
-  WHERE city LIKE '%ancouv%'
-  GROUP BY properties.id
-  HAVING avg(property_reviews.rating) >= 4
-  ORDER BY cost_per_night
-  LIMIT 10;
-  `
-}
  */
 const getAllProperties = function(options, limit = 10) {
   let queryString = `
@@ -188,7 +169,6 @@ const getAllProperties = function(options, limit = 10) {
   ORDER BY cost_per_night
   LIMIT $${queryStringValues.length};
   `;
-  console.log(queryString, queryStringValues);
   return pool
   .query(queryString, queryStringValues)
   .then((result) => result.rows)
@@ -201,23 +181,6 @@ exports.getAllProperties = getAllProperties;
  * Add a property to the database
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
- * {
-  owner_id: int,
-  title: string,
-  description: string,
-  thumbnail_photo_url: string,
-  cover_photo_url: string,
-  cost_per_night: string,
-  street: string,
-  city: string,
-  province: string,
-  post_code: string,
-  country: string,
-  parking_spaces: int,
-  number_of_bathrooms: int,
-  number_of_bedrooms: int
-}
-RETURNING *; returns newly created entry
  */
 const addProperty = function(property) {
   // Prep query string and values to be added
